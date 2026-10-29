@@ -29,8 +29,8 @@ class NewPasswordRequiredException(
 class CognitoAuthManager(context: Context) {
 
     companion object {
-        const val USER_POOL_ID = "us-east-1_Z0HYVjbrw"
-        const val CLIENT_ID = "1p47ikalvv22ajhmvr3ssf5mv9"
+        const val USER_POOL_ID = "us-east-1_lLYEkDgbK"
+        const val CLIENT_ID = "38673uieivf5o1lgkimlvvfqf7"
         val REGION: Regions = Regions.US_EAST_1
     }
 
