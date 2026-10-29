@@ -1,5 +1,6 @@
 package cl.kcorp.syncpass.ui.login
 
+import android.content.ClipData
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,9 +32,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -54,7 +55,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val authManager = remember { CognitoAuthManager(context) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
 
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -173,7 +174,11 @@ fun LoginScreen(
                         ) {
                             TextButton(onClick = {
                                 authTokens?.accessToken?.let { token ->
-                                    clipboardManager.setText(AnnotatedString(token))
+                                    coroutineScope.launch {
+                                        clipboard.setClipEntry(
+                                            ClipEntry(ClipData.newPlainText("Access Token", token)),
+                                        )
+                                    }
                                 }
                             }) {
                                 Text("Copiar Access Token")
@@ -352,6 +357,7 @@ fun LoginScreen(
                                 isNewPasswordRequired = false
                                 isNameRequired = false
                                 isPhoneRequired = false
+                                onLoginSuccess(tokens)
                             }.onFailure { ex ->
                                 if (ex is NewPasswordRequiredException) {
                                     isNewPasswordRequired = true

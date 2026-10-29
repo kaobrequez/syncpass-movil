@@ -36,6 +36,67 @@ class CognitoAuthManager(context: Context) {
 
     private val userPool = CognitoUserPool(context, USER_POOL_ID, CLIENT_ID, null, REGION)
 
+    fun signOut() {
+        userPool.currentUser?.signOut()
+    }
+
+    /**
+     * Intenta recuperar la sesión guardada por el SDK de Cognito sin pedir credenciales.
+     * Devuelve null si no hay un usuario previo en el dispositivo.
+     */
+    suspend fun restoreSession(): Result<AuthTokens>? {
+        val user = userPool.currentUser ?: return null
+        return suspendCancellableCoroutine { continuation ->
+            val handler = object : AuthenticationHandler {
+                override fun onSuccess(userSession: CognitoUserSession?, newDevice: CognitoDevice?) {
+                    if (userSession != null) {
+                        val tokens = AuthTokens(
+                            idToken = userSession.idToken.jwtToken,
+                            accessToken = userSession.accessToken.jwtToken,
+                            refreshToken = userSession.refreshToken.token,
+                            username = user.userId,
+                        )
+                        if (continuation.isActive) {
+                            continuation.resume(Result.success(tokens))
+                        }
+                    } else if (continuation.isActive) {
+                        continuation.resume(Result.failure(Exception("Sesión nula devuelta por AWS Cognito")))
+                    }
+                }
+
+                override fun getAuthenticationDetails(
+                    continuationAuth: AuthenticationContinuation?,
+                    userId: String?,
+                ) {
+                    if (continuation.isActive) {
+                        continuation.resume(Result.failure(Exception("No hay una sesión guardada válida")))
+                    }
+                }
+
+                override fun getMFACode(continuationMfa: MultiFactorAuthenticationContinuation?) {
+                    if (continuation.isActive) {
+                        continuation.resume(Result.failure(Exception("MFA requerido para restaurar la sesión")))
+                    }
+                }
+
+                override fun authenticationChallenge(continuationChallenge: ChallengeContinuation?) {
+                    if (continuation.isActive) {
+                        continuation.resume(Result.failure(Exception("Desafío requerido para restaurar la sesión")))
+                    }
+                }
+
+                override fun onFailure(exception: Exception?) {
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            Result.failure(exception ?: Exception("No se pudo restaurar la sesión")),
+                        )
+                    }
+                }
+            }
+            user.getSessionInBackground(handler)
+        }
+    }
+
     suspend fun login(
         username: String,
         password: String,
