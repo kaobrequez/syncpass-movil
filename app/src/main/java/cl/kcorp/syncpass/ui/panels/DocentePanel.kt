@@ -21,8 +21,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,14 +46,17 @@ import cl.kcorp.syncpass.ui.components.EmptyMessage
 import cl.kcorp.syncpass.ui.components.ErrorBanner
 import cl.kcorp.syncpass.ui.components.LoadingMessage
 import cl.kcorp.syncpass.ui.components.MetricBox
+import cl.kcorp.syncpass.ui.components.MetricCard
+import cl.kcorp.syncpass.ui.components.PillTabRow
 import cl.kcorp.syncpass.ui.components.PanelHeader
+import cl.kcorp.syncpass.ui.components.SectionTitle
 import cl.kcorp.syncpass.ui.components.QrCodeImage
 import cl.kcorp.syncpass.ui.components.StatusChip
 import cl.kcorp.syncpass.ui.components.formatDate
 import cl.kcorp.syncpass.ui.components.formatDateTime
 import cl.kcorp.syncpass.ui.components.formatDateTimeInput
 
-private val docenteTabs = listOf("Proyectos", "Eventos", "Informes")
+private val docenteTabs = listOf("Resumen", "Proyectos", "Eventos", "Informes")
 
 private fun String.toCoordinate(): Double? = trim().replace(',', '.').toDoubleOrNull()
 
@@ -70,18 +71,28 @@ fun DocentePanel(session: UserSession) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        PrimaryTabRow(selectedTabIndex = tab) {
-            docenteTabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = tab == index,
-                    onClick = { tab = index },
-                    text = { Text(title) },
-                )
-            }
+        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)) {
+            PillTabRow(
+                items = docenteTabs,
+                selectedIndex = tab,
+                onSelect = { tab = it },
+            )
         }
 
         when (tab) {
-            0 -> ProyectosTab(
+            0 -> ResumenTab(
+                name = session.name,
+                proyectos = state.proyectos,
+                eventos = state.eventos,
+                metricas = state.metricas,
+                selectedProyecto = state.selectedProyectoId,
+                loading = state.loading,
+                onSelectProyecto = viewModel::selectProyecto,
+                onOpenProyectos = { tab = 1 },
+                onOpenEventos = { tab = 2 },
+                onOpenInformes = { tab = 3 },
+            )
+            1 -> ProyectosTab(
                 usuario = state.usuario,
                 proyectos = state.proyectos,
                 selectedProyecto = state.selectedProyectoId,
@@ -92,7 +103,7 @@ fun DocentePanel(session: UserSession) {
                 onUpdate = viewModel::updateProyecto,
                 onDelete = viewModel::deleteProyecto,
             )
-            1 -> EventosTab(
+            2 -> EventosTab(
                 proyecto = state.proyectos.firstOrNull { it.idProyecto == state.selectedProyectoId },
                 eventos = state.eventos,
                 metricas = state.metricas,
@@ -108,6 +119,214 @@ fun DocentePanel(session: UserSession) {
                 metricas = state.metricas,
                 onSelect = viewModel::selectProyecto,
             )
+        }
+    }
+}
+
+@Composable
+private fun ResumenTab(
+    name: String,
+    proyectos: List<Proyecto>,
+    eventos: List<Evento>,
+    metricas: Map<Int, MetricasEvento>,
+    selectedProyecto: Int?,
+    loading: Boolean,
+    onSelectProyecto: (Int) -> Unit,
+    onOpenProyectos: () -> Unit,
+    onOpenEventos: () -> Unit,
+    onOpenInformes: () -> Unit,
+) {
+    val totalInscritos = metricas.values.sumOf { it.totalInscritos }
+    val totalAsistencias = metricas.values.sumOf { it.totalAsistencias }
+    val totalEncuestas = metricas.values.sumOf { it.encuestasRespondidas }
+    val promedio = if (totalEncuestas > 0) {
+        Math.round(
+            metricas.values.sumOf { it.satisfaccionPromedio * it.encuestasRespondidas } /
+                totalEncuestas * 100.0,
+        ) / 100.0
+    } else {
+        0.0
+    }
+    val porcentaje = if (totalInscritos > 0) totalAsistencias * 100 / totalInscritos else 0
+    val proyecto = proyectos.firstOrNull { it.idProyecto == selectedProyecto } ?: proyectos.firstOrNull()
+    val proximo = eventos.minByOrNull { it.fechaInicio }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            PanelHeader(
+                title = "Hola, ${name.substringBefore(' ')}",
+                subtitle = "Este es el estado de tus proyectos y actividades comunitarias.",
+            )
+        }
+        if (loading) {
+            item { LoadingMessage("Cargando tu resumen...") }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricCard(
+                    label = "Proyectos",
+                    value = proyectos.size.toString(),
+                    foot = "${eventos.size} eventos",
+                    modifier = Modifier.weight(1f),
+                )
+                MetricCard(
+                    label = "Inscritos",
+                    value = totalInscritos.toString(),
+                    foot = "Participantes",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricCard(
+                    label = "Asistencia",
+                    value = "$porcentaje%",
+                    foot = "$totalAsistencias registros",
+                    modifier = Modifier.weight(1f),
+                )
+                MetricCard(
+                    label = "Satisfacción",
+                    value = "$promedio/4",
+                    foot = "$totalEncuestas encuestas",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SectionTitle(
+                        title = "Próximo evento",
+                        action = {
+                            TextButton(onClick = onOpenEventos) { Text("Gestionar") }
+                        },
+                    )
+                    if (proximo == null) {
+                        EmptyMessage("No hay eventos programados en este proyecto.")
+                    } else {
+                        Text(
+                            text = proximo.nombre,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 10.dp),
+                        )
+                        Text(
+                            text = "${formatDateTime(proximo.fechaInicio)} · ${proximo.recinto ?: "Sin sala"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 3.dp),
+                        )
+                        Row(
+                            modifier = Modifier.padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            StatusChip(proximo.estado, proximo.estado != "CANCELADO")
+                            StatusChip("${proximo.cuposMaximos} cupos", positive = true)
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SectionTitle(
+                        title = "Proyectos activos",
+                        action = { TextButton(onClick = onOpenProyectos) { Text("Ver todos") } },
+                    )
+                    if (proyectos.isEmpty()) {
+                        EmptyMessage("Aún no tienes proyectos. Crea el primero para comenzar.")
+                    } else {
+                        proyectos.take(4).forEach { p ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = p.titulo,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        text = "${formatDate(p.fechaInicio)} → ${formatDate(p.fechaTermino)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                TextButton(
+                                    onClick = {
+                                        onSelectProyecto(p.idProyecto)
+                                        onOpenEventos()
+                                    },
+                                ) { Text("Ver") }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SectionTitle(
+                        title = "Actividad reciente",
+                        action = { TextButton(onClick = onOpenInformes) { Text("Informes") } },
+                    )
+                    if (eventos.isEmpty()) {
+                        EmptyMessage("Sin eventos registrados.")
+                    } else {
+                        eventos.take(4).forEach { e ->
+                            val m = metricas[e.idEvento]
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = e.nombre,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        text = formatDateTime(e.fechaInicio),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Text(
+                                    text = m?.let { "${it.porcentajeAsistencia}%" } ?: "—",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -187,6 +406,7 @@ private fun ProyectosTab(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(
@@ -443,6 +663,7 @@ private fun EventosTab(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = MaterialTheme.shapes.large,
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(

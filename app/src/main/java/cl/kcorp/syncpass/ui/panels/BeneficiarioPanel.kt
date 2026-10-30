@@ -16,8 +16,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.kcorp.syncpass.data.auth.UserSession
@@ -40,6 +39,7 @@ import cl.kcorp.syncpass.ui.components.InfoBanner
 import cl.kcorp.syncpass.ui.components.InfoRow
 import cl.kcorp.syncpass.ui.components.LoadingMessage
 import cl.kcorp.syncpass.ui.components.PanelHeader
+import cl.kcorp.syncpass.ui.components.PillTabRow
 import cl.kcorp.syncpass.ui.components.QrCodeImage
 import cl.kcorp.syncpass.ui.components.StatusChip
 import cl.kcorp.syncpass.ui.components.formatDateTime
@@ -56,14 +56,12 @@ fun BeneficiarioPanel(session: UserSession) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        PrimaryTabRow(selectedTabIndex = state.tab) {
-            beneficiarioTabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = state.tab == index,
-                    onClick = { viewModel.selectTab(index) },
-                    text = { Text(title) },
-                )
-            }
+        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)) {
+            PillTabRow(
+                items = beneficiarioTabs,
+                selectedIndex = state.tab,
+                onSelect = viewModel::selectTab,
+            )
         }
 
         when (state.tab) {
@@ -135,6 +133,7 @@ private fun InfoTab(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = MaterialTheme.shapes.large,
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -186,6 +185,7 @@ private fun EventosTab(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(
@@ -258,22 +258,37 @@ private fun EventosTab(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    ) {
                                         (1..4).forEach { n ->
                                             if (calificacion == n) {
                                                 Button(
                                                     onClick = { onCalificacion(n) },
                                                     modifier = Modifier.size(48.dp),
                                                     contentPadding = PaddingValues(0.dp),
-                                                ) { Text(n.toString()) }
+                                                ) { Text("★", fontSize = 20.sp) }
                                             } else {
                                                 OutlinedButton(
                                                     onClick = { onCalificacion(n) },
                                                     modifier = Modifier.size(48.dp),
                                                     contentPadding = PaddingValues(0.dp),
-                                                ) { Text(n.toString()) }
+                                                ) {
+                                                    Text(
+                                                        "★",
+                                                        fontSize = 20.sp,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
                                             }
                                         }
+                                        Text(
+                                            "${calificacion} de 4",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(start = 4.dp),
+                                        )
                                     }
                                     OutlinedTextField(
                                         value = comentarios,
@@ -328,6 +343,7 @@ private fun QrTab(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
             ) {
                 Column(
                     modifier = Modifier

@@ -19,8 +19,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +40,7 @@ import cl.kcorp.syncpass.ui.components.EmptyMessage
 import cl.kcorp.syncpass.ui.components.ErrorBanner
 import cl.kcorp.syncpass.ui.components.LoadingMessage
 import cl.kcorp.syncpass.ui.components.PanelHeader
+import cl.kcorp.syncpass.ui.components.PillTabRow
 import cl.kcorp.syncpass.ui.components.StatusChip
 
 private val adminTabs = listOf("Usuarios", "Docente", "Voluntario", "Beneficiario")
@@ -57,17 +56,12 @@ fun AdminPanel(session: UserSession) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        PrimaryScrollableTabRow(
-            selectedTabIndex = state.tab,
-            edgePadding = 0.dp,
-        ) {
-            adminTabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = state.tab == index,
-                    onClick = { viewModel.selectTab(index) },
-                    text = { Text(title) },
-                )
-            }
+        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)) {
+            PillTabRow(
+                items = adminTabs,
+                selectedIndex = state.tab,
+                onSelect = viewModel::selectTab,
+            )
         }
 
         Box(modifier = Modifier.weight(1f)) {
@@ -183,6 +177,7 @@ private fun UsuariosTab(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.large,
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(
