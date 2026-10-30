@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import cl.kcorp.syncpass.data.location.LocationProvider
 import cl.kcorp.syncpass.data.model.Evento
 import cl.kcorp.syncpass.data.model.Inscrito
+import cl.kcorp.syncpass.data.model.MetricasEvento
 import cl.kcorp.syncpass.data.repository.SyncPassRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ enum class VoluntarioView { EVENTOS, INSCRITOS, SCANNER }
 data class VoluntarioUiState(
     val view: VoluntarioView = VoluntarioView.EVENTOS,
     val eventos: List<Evento> = emptyList(),
+    val metricas: Map<Int, MetricasEvento> = emptyMap(),
     val selectedEvento: Evento? = null,
     val inscritos: List<Inscrito> = emptyList(),
     val loading: Boolean = true,
@@ -37,7 +39,10 @@ class VoluntarioViewModel : ViewModel() {
         viewModelScope.launch {
             _state.update { it.copy(loading = true) }
             val eventos = SyncPassRepository.getEventos()
-            _state.update { it.copy(eventos = eventos, loading = false) }
+            val metricas = eventos.associate { evento ->
+                evento.idEvento to SyncPassRepository.getMetricasEvento(evento.idEvento)
+            }
+            _state.update { it.copy(eventos = eventos, metricas = metricas, loading = false) }
         }
     }
 
@@ -139,10 +144,12 @@ class VoluntarioViewModel : ViewModel() {
                         "✅ Asistencia guardada. Se sincronizará al recuperar conexión."
                     }
                     val inscritosActualizados = SyncPassRepository.getInscritosByEvento(idEvento)
+                    val metricasActualizadas = SyncPassRepository.getMetricasEvento(idEvento)
                     _state.update {
                         it.copy(
                             scanStatus = mensaje + validacion.sufijo,
                             inscritos = inscritosActualizados,
+                            metricas = it.metricas + (idEvento to metricasActualizadas),
                         )
                     }
                     delay(1800)

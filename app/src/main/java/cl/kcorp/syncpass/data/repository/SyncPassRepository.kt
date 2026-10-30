@@ -19,6 +19,7 @@ import cl.kcorp.syncpass.data.model.Inscripcion
 import cl.kcorp.syncpass.data.model.Inscrito
 import cl.kcorp.syncpass.data.model.MetricasEvento
 import cl.kcorp.syncpass.data.model.Proyecto
+import cl.kcorp.syncpass.data.model.Rol
 import cl.kcorp.syncpass.data.model.Usuario
 import cl.kcorp.syncpass.data.model.UsuarioItem
 import cl.kcorp.syncpass.data.remote.SupabaseClient
@@ -261,7 +262,7 @@ object SyncPassRepository {
         return runCatching {
             val data = SupabaseClient.select(
                 "usuario",
-                "select=id_usuario,nombre_mostrar,correo,estado,rol:rol(nombre)&order=nombre_mostrar.asc",
+                "select=id_usuario,nombre_usuario,nombre_mostrar,correo,id_rol,estado,rol:rol(nombre)&order=nombre_mostrar.asc",
             )
             val items = data.mapNotNull { element ->
                 val obj = element.asJsonObject
@@ -272,8 +273,10 @@ object SyncPassRepository {
                 }
                 UsuarioItem(
                     idUsuario = obj.get("id_usuario")?.asInt ?: 0,
+                    nombreUsuario = obj.get("nombre_usuario")?.takeIf { !it.isJsonNull }?.asString.orEmpty(),
                     nombreMostrar = obj.get("nombre_mostrar")?.asString.orEmpty(),
                     correo = obj.get("correo")?.asString.orEmpty(),
+                    idRol = obj.get("id_rol")?.takeIf { !it.isJsonNull }?.asInt ?: 0,
                     rol = rol,
                     estado = obj.get("estado")?.asString.orEmpty(),
                 )
@@ -281,6 +284,82 @@ object SyncPassRepository {
             cacheUsuarios(items)
             items
         }.getOrElse { cached }
+    }
+
+    suspend fun getRoles(): List<Rol> {
+        if (!SupabaseConfig.isConfigured || !isOnline()) return emptyList()
+        return runCatching {
+            val data = SupabaseClient.select("rol", "select=id_rol,nombre,descripcion&order=id_rol.asc")
+            parseList(data, Rol::class.java)
+        }.getOrElse { emptyList() }
+    }
+
+    suspend fun createUsuario(
+        idRol: Int,
+        nombreUsuario: String,
+        nombreMostrar: String,
+        correo: String,
+        estado: String = "ACTIVO",
+        rolNombre: String? = null,
+    ): Boolean {
+        if (!SupabaseConfig.isConfigured || !isOnline()) return false
+        return runCatching {
+            val body = JsonObject().apply {
+                addProperty("id_rol", idRol)
+                addProperty("nombre_usuario", nombreUsuario)
+                addProperty("nombre_mostrar", nombreMostrar)
+                addProperty("correo", correo)
+                addProperty("estado", estado)
+            }
+            val created = retryWithoutUnknownColumns(body) {
+                SupabaseClient.insert("usuario", body)
+            }.firstOrNull()?.let { gson.fromJson(it, Usuario::class.java) }
+            if (created != null) {
+                cacheUsuario(created, rolNombre)
+                true
+            } else {
+                false
+            }
+        }.getOrElse { false }
+    }
+
+    suspend fun updateUsuario(
+        idUsuario: Int,
+        idRol: Int,
+        nombreUsuario: String,
+        nombreMostrar: String,
+        correo: String,
+        estado: String,
+        rolNombre: String? = null,
+    ): Boolean {
+        if (!SupabaseConfig.isConfigured || !isOnline()) return false
+        return runCatching {
+            val body = JsonObject().apply {
+                addProperty("id_rol", idRol)
+                addProperty("nombre_usuario", nombreUsuario)
+                addProperty("nombre_mostrar", nombreMostrar)
+                addProperty("correo", correo)
+                addProperty("estado", estado)
+            }
+            val updated = retryWithoutUnknownColumns(body) {
+                SupabaseClient.update("usuario", "id_usuario=eq.$idUsuario", body)
+            }.firstOrNull()?.let { gson.fromJson(it, Usuario::class.java) }
+            if (updated != null) {
+                cacheUsuario(updated, rolNombre)
+                true
+            } else {
+                false
+            }
+        }.getOrElse { false }
+    }
+
+    suspend fun deleteUsuario(idUsuario: Int): Boolean {
+        if (!SupabaseConfig.isConfigured || !isOnline()) return false
+        return runCatching {
+            SupabaseClient.delete("usuario", "id_usuario=eq.$idUsuario")
+            dao?.deleteUsuario(idUsuario)
+            true
+        }.getOrElse { false }
     }
 
     // ---------------------------------------------------------------------

@@ -98,8 +98,16 @@ data class MetricasEvento(
 
 data class UsuarioItem(
     val idUsuario: Int = 0,
+    val nombreUsuario: String = "",
     val nombreMostrar: String = "",
     val correo: String = "",
+    val idRol: Int = 0,
     val rol: String = "",
     val estado: String = "",
+)
+
+data class Rol(
+    val idRol: Int = 0,
+    val nombre: String = "",
+    val descripcion: String? = null,
 )

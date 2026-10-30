@@ -1,7 +1,9 @@
 package cl.kcorp.syncpass.ui.dashboard
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,18 +15,24 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.kcorp.syncpass.data.auth.Role
 import cl.kcorp.syncpass.data.auth.UserSession
+import cl.kcorp.syncpass.ui.components.BrandLogo
 import cl.kcorp.syncpass.ui.components.InfoBanner
 import cl.kcorp.syncpass.ui.panels.AdminPanel
 import cl.kcorp.syncpass.ui.panels.BeneficiarioPanel
 import cl.kcorp.syncpass.ui.panels.DocentePanel
 import cl.kcorp.syncpass.ui.panels.VoluntarioPanel
+import cl.kcorp.syncpass.ui.theme.BrandPrimaryLight
+import cl.kcorp.syncpass.ui.theme.BrandSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,30 +47,34 @@ fun DashboardScreen(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = BrandSecondary,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White,
                 ),
                 title = {
-                    Column {
-                        Text(
-                            text = "SyncPass",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = "${session.name} · ${session.email}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        BrandLogo(size = 38.dp, corner = 12.dp, textSize = 15.sp)
+                        Column {
+                            Text(
+                                text = "SyncPass",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            )
+                            Text(
+                                text = "${session.role.label} · ${session.name}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.55f),
+                            )
+                        }
                     }
                 },
                 actions = {
-                    Text(
-                        text = session.role.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
                     TextButton(onClick = onLogout) {
-                        Text("Salir")
+                        Text("Salir", color = BrandPrimaryLight)
                     }
                 },
             )

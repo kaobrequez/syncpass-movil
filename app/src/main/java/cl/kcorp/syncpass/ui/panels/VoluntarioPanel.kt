@@ -33,10 +33,12 @@ import cl.kcorp.syncpass.data.auth.UserSession
 import cl.kcorp.syncpass.data.location.LocationProvider
 import cl.kcorp.syncpass.data.model.Evento
 import cl.kcorp.syncpass.data.model.Inscrito
+import cl.kcorp.syncpass.data.model.MetricasEvento
 import cl.kcorp.syncpass.data.remote.SupabaseConfig
 import cl.kcorp.syncpass.ui.components.EmptyMessage
 import cl.kcorp.syncpass.ui.components.ErrorBanner
 import cl.kcorp.syncpass.ui.components.LoadingMessage
+import cl.kcorp.syncpass.ui.components.MetricBox
 import cl.kcorp.syncpass.ui.components.PanelHeader
 import cl.kcorp.syncpass.ui.components.StatusChip
 import cl.kcorp.syncpass.ui.components.formatDateTime
@@ -77,6 +79,7 @@ fun VoluntarioPanel(@Suppress("UNUSED_PARAMETER") session: UserSession) {
     when (state.view) {
         VoluntarioView.EVENTOS -> EventosVoluntario(
             eventos = state.eventos,
+            metricas = state.metricas,
             loading = state.loading,
             onInscritos = viewModel::openInscritos,
             onScanner = viewModel::openScanner,
@@ -155,6 +158,7 @@ fun VoluntarioPanel(@Suppress("UNUSED_PARAMETER") session: UserSession) {
 @Composable
 private fun EventosVoluntario(
     eventos: List<Evento>,
+    metricas: Map<Int, MetricasEvento>,
     loading: Boolean,
     onInscritos: (Evento) -> Unit,
     onScanner: (Evento) -> Unit,
@@ -199,6 +203,29 @@ private fun EventosVoluntario(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
                     )
+                    val m = metricas[evento.idEvento]
+                    if (m != null) {
+                        Row(
+                            modifier = Modifier.padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            MetricBox(
+                                label = "Asistentes",
+                                value = m.totalAsistencias.toString(),
+                                modifier = Modifier.weight(1f),
+                            )
+                            MetricBox(
+                                label = "Faltantes",
+                                value = (m.totalInscritos - m.totalAsistencias).coerceAtLeast(0).toString(),
+                                modifier = Modifier.weight(1f),
+                            )
+                            MetricBox(
+                                label = "Asistencia",
+                                value = "${m.porcentajeAsistencia}%",
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
                     Row(
                         modifier = Modifier.padding(top = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),

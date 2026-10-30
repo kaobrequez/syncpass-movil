@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -843,10 +844,16 @@ private fun InformesTab(
 
         if (proyectos.size > 1) {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    proyectos.take(4).forEach { p ->
-                        OutlinedButton(onClick = { onSelect(p.idProyecto) }) {
-                            Text(p.titulo, maxLines = 1)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(proyectos, key = { it.idProyecto }) { p ->
+                        if (p.idProyecto == selectedProyecto) {
+                            Button(onClick = { onSelect(p.idProyecto) }) {
+                                Text(p.titulo, maxLines = 1)
+                            }
+                        } else {
+                            OutlinedButton(onClick = { onSelect(p.idProyecto) }) {
+                                Text(p.titulo, maxLines = 1)
+                            }
                         }
                     }
                 }

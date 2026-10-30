@@ -1,10 +1,14 @@
 package cl.kcorp.syncpass.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -12,8 +16,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -30,6 +40,32 @@ fun formatDate(value: String?): String {
 fun formatDateTimeInput(value: String?): String {
     if (value.isNullOrBlank()) return ""
     return value.take(16).replace(' ', 'T')
+}
+
+@Composable
+fun BrandLogo(
+    size: Dp = 36.dp,
+    corner: Dp = 12.dp,
+    textSize: TextUnit = 14.sp,
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(corner))
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFFFF6B6B), Color(0xFFFF8A65)),
+                ),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "S",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = textSize,
+        )
+    }
 }
 
 @Composable
@@ -70,15 +106,16 @@ fun InfoRow(label: String, value: String) {
 
 @Composable
 fun StatusChip(text: String, positive: Boolean) {
+    val dark = isSystemInDarkTheme()
     val container = if (positive) {
-        MaterialTheme.colorScheme.primaryContainer
+        if (dark) Color(0xFF14532D) else Color(0xFFDCFCE7)
     } else {
-        MaterialTheme.colorScheme.tertiaryContainer
+        if (dark) Color(0xFF78350F) else Color(0xFFFEF3C7)
     }
     val content = if (positive) {
-        MaterialTheme.colorScheme.onPrimaryContainer
+        if (dark) Color(0xFFBBF7D0) else Color(0xFF166534)
     } else {
-        MaterialTheme.colorScheme.onTertiaryContainer
+        if (dark) Color(0xFFFDE68A) else Color(0xFF92400E)
     }
     Surface(
         color = container,

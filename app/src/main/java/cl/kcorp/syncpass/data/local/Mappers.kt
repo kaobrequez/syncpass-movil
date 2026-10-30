@@ -137,16 +137,18 @@ fun UsuarioEntity.toModel(): Usuario = Usuario(
 
 fun UsuarioEntity.toItem(): UsuarioItem = UsuarioItem(
     idUsuario = idUsuario,
+    nombreUsuario = nombreUsuario,
     nombreMostrar = nombreMostrar,
     correo = correo,
+    idRol = idRol,
     rol = rolNombre.orEmpty(),
     estado = estado,
 )
 
 fun UsuarioItem.toEntity(): UsuarioEntity = UsuarioEntity(
     idUsuario = idUsuario,
-    idRol = 0,
-    nombreUsuario = correo.substringBefore("@"),
+    idRol = idRol,
+    nombreUsuario = nombreUsuario.ifBlank { correo.substringBefore("@") },
     nombreMostrar = nombreMostrar,
     correo = correo,
     estado = estado,

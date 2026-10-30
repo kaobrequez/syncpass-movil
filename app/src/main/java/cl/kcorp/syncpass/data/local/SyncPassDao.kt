@@ -108,6 +108,9 @@ interface SyncPassDao {
     @Query("DELETE FROM usuario_cache WHERE idUsuario NOT IN (:ids)")
     suspend fun deleteStaleUsuarios(ids: List<Int>)
 
+    @Query("DELETE FROM usuario_cache WHERE idUsuario = :idUsuario")
+    suspend fun deleteUsuario(idUsuario: Int)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun enqueue(action: PendingActionEntity): Long
 

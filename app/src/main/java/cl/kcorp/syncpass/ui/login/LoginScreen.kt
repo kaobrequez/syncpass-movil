@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import cl.kcorp.syncpass.data.auth.AuthTokens
 import cl.kcorp.syncpass.data.auth.CognitoAuthManager
 import cl.kcorp.syncpass.data.auth.NewPasswordRequiredException
+import cl.kcorp.syncpass.ui.components.BrandLogo
 import kotlinx.coroutines.launch
 
 @Composable
@@ -85,11 +86,14 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            BrandLogo(size = 64.dp, corner = 20.dp, textSize = 28.sp)
+
             Text(
                 text = "SyncPass",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 12.dp)
             )
 
             Text(
