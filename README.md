@@ -3,6 +3,12 @@
 Cliente Android en Kotlin + Jetpack Compose conectado a AWS Cognito (login) y Supabase
 (mismos datos que usa SyncPass-Web).
 
+## Requisitos
+
+- JDK 11 o superior (probado con JDK 25).
+- Android SDK con `compileSdk 37` y la imagen del emulador instalada (el AVD `Pixel_4` usa API 29 x86).
+- KVM habilitado en Linux (`/dev/kvm`) para aceleración del emulador.
+
 ## Configuración de Supabase
 
 La app necesita `SUPABASE_URL` y `SUPABASE_ANON_KEY`. Puedes definirlas de cualquiera de estas formas:
@@ -54,8 +60,30 @@ Después del login con Cognito, la app lee `cognito:groups` y muestra el panel c
 - **Voluntario:** eventos, lista de inscritos y escáner QR de asistencia.
 - **Beneficiario:** información personal, inscripción a eventos, pase QR y encuesta de satisfacción.
 
-## Compilar
+## Compilar y ejecutar
 
 ```bash
-./gradlew assembleDebug
+./gradlew assembleDebug   # genera el APK
+./gradlew installDebug    # lo instala en el dispositivo/emulador conectado
+~/Android/Sdk/emulator/emulator -avd Pixel_4   # arrancar el emulador (si no está corriendo)
+~/Android/Sdk/platform-tools/adb shell am start -n cl.kcorp.syncpass/.MainActivity
 ```
+
+## Solución de problemas del emulador
+
+**El emulador aparece como `offline` en adb y Android Studio da error al lanzar MainActivity:**
+
+Ocurre cuando el snapshot de arranque rápido (Quick Boot) se corrompe y el proceso
+`qemu-system-x86_64` queda colgado (CPU alta, `sys.boot_completed` nunca llega a 1).
+
+1. Verificar el estado: `~/Android/Sdk/platform-tools/adb devices` (si dice `offline`, es este problema).
+2. Matar el proceso colgado: `pkill -f qemu-system-x86_64`.
+3. Reiniciar con cold boot:
+   ```bash
+   ~/Android/Sdk/emulator/emulator -avd Pixel_4 -no-snapshot-load -no-boot-anim
+   ```
+4. Esperar a que arranque: `~/Android/Sdk/platform-tools/adb wait-for-device shell getprop sys.boot_completed` debe devolver `1`.
+
+En Android Studio equivale a: Device Manager → menú del AVD → **Cold Boot Now**
+(o **Wipe Data** si persiste). Para evitar que se repita, desactivar *Quick Boot*
+en la configuración del AVD.
